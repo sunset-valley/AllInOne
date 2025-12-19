@@ -5,10 +5,10 @@ struct FeaturesView: View {
     
     var body: some View {
         List {
-            ForEach(categoryManager.categoies, id: \.id) { category in
+            ForEach(categoryManager.categories, id: \.id) { category in
                 Section(category.title) {
                     ForEach(category.features, id: \.id) { feature in
-                        NavigationLink(value: feature) {
+                        NavigationLink(value: feature.destination) {
                             Text(feature.title)
                         }
                     }
@@ -16,11 +16,15 @@ struct FeaturesView: View {
             }
         }
         .navigationTitle("Features")
-        .navigationDestination(for: Feature.self) { feature in
-            if feature.title == "Interactive Transition" {
+        .navigationDestination(for: Feature.Destination.self) { destination in
+            switch destination {
+            case .buildInTransition:
                 BuildInTransitionView()
-            } else {
-                Text(feature.title)
+            case .fallback(let title):
+                Text(title)
+            default:
+                // Placeholder for other destinations
+                Text("Not Implemented")
             }
         }
     }
