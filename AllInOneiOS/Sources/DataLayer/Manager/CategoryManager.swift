@@ -6,7 +6,7 @@ import Foundation
     init() {
         categoies = [
             .init(title: "Transitions & Animations", features: [
-                .init(title: "Interactive Transition"),
+                .init(title: "Build-in Transition"),
                 .init(title: "Pixel")
             ]),
             .init(title: "UI", features: [
