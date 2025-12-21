@@ -2,25 +2,22 @@ import Foundation
 import SwiftUI
 
 struct Feature: Hashable, Identifiable {
-    enum Destination: Hashable {
-        case buildInTransition
-        case pixel
-        case navigationStack
-        case tabView
-        case scrollView
-        case coreText
-        case mvc
-        case mvvmc
-        case cleanArchitecture
-        case redux
-        case debugView
-        case fictionReader
-        case comicReader
-        case cloudTags
-        case fallback(title: String)
-    }
+  enum Destination: Hashable {
+    case buildInTransition
+    case highlightSwift
+    case fallback(title: String)
 
-    var id = UUID()
-    var title: String
-    var destination: Destination
+    /// Source code directory path relative to Features folder
+    var sourceDirectory: String? {
+      switch self {
+      case .buildInTransition: return "Transitions"
+      case .highlightSwift: return "HighlightSwift"
+      case .fallback: return nil
+      }
+    }
+  }
+
+  var id = UUID()
+  var title: String
+  var destination: Destination
 }
