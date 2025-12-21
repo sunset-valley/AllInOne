@@ -6,6 +6,7 @@ struct FeatureCodeDetailView: View {
 
   @State private var sourceCode: String = ""
   @State private var isLoading = true
+  @State private var isLandscape = false
 
   var body: some View {
     Group {
@@ -31,6 +32,23 @@ struct FeatureCodeDetailView: View {
     }
     .navigationTitle(file.displayName)
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .navigationBarTrailing) {
+        Button {
+          isLandscape.toggle()
+          if isLandscape {
+            OrientationManager.rotateLandscape()
+          } else {
+            OrientationManager.lockPortrait()
+          }
+        } label: {
+          Image(systemName: isLandscape ? "rectangle.portrait" : "rectangle.landscape.rotate")
+        }
+      }
+    }
+    .onDisappear {
+      OrientationManager.lockPortrait()
+    }
     .task {
       sourceCode = FeatureSourceProvider.shared.readSourceContent(for: file) ?? ""
       isLoading = false

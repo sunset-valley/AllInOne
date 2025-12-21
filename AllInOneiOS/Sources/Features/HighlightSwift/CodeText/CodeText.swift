@@ -26,6 +26,7 @@ public struct CodeText {
     highlightResult?.attributedText ?? AttributedString(stringLiteral: text)
   }
 
+  @MainActor
   func highlightText(
     mode: HighlightMode? = nil,
     colors: CodeTextColors? = nil,
