@@ -42,7 +42,7 @@ struct FeatureSourceProvider {
         // Recursively scan subdirectories
         let subPath = basePath + "/" + item
         files.append(contentsOf: listSwiftFiles(at: fullPath, basePath: subPath))
-      } else if item.hasSuffix(".swift") {
+      } else if item.hasSuffix(".swift") || item.hasSuffix(".metal") {
         let relativePath = basePath + "/" + item
         let language = detectLanguage(for: item)
         files.append(
@@ -62,6 +62,7 @@ struct FeatureSourceProvider {
     let ext = (fileName as NSString).pathExtension.lowercased()
     switch ext {
     case "swift": return .swift
+    case "metal": return .cPlusPlus
     case "js": return .javaScript
     case "ts": return .typeScript
     case "py": return .python

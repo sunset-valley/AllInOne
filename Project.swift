@@ -30,9 +30,9 @@ let project = Project(
             rm -rf "$DEST_DIR"
             mkdir -p "$DEST_DIR"
 
-            # Copy only .swift files while preserving directory structure
+            # Copy .swift and .metal files while preserving directory structure
             cd "$SOURCE_DIR"
-            find . -name "*.swift" -type f | while read file; do
+            find . \\( -name "*.swift" -o -name "*.metal" \\) -type f | while read file; do
                 mkdir -p "$DEST_DIR/$(dirname "$file")"
                 cp "$file" "$DEST_DIR/$file"
             done
