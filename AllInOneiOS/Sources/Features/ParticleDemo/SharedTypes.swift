@@ -6,6 +6,7 @@ struct Particle {
   var velocity: SIMD3<Float>  // 3D velocity
   var homePosition: SIMD3<Float>  // 原始归位点
   var noiseOffset: SIMD2<Float>  // 每个粒子的噪声偏移（用于 idle 动画）
+  var color: SIMD4<Float>  // 粒子颜色 RGBA (从图片采样)
 }
 
 struct Uniforms {

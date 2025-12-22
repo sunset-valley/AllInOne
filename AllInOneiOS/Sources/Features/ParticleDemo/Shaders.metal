@@ -6,6 +6,7 @@ struct Particle {
     float3 velocity;
     float3 homePosition;
     float2 noiseOffset;
+    float4 color;  // 粒子颜色 RGBA (从图片采样)
 };
 
 struct Uniforms {
@@ -138,33 +139,12 @@ vertex VertexOut particleVertex(const device Particle *particles [[buffer(0)]],
     out.position = float4(ndcSpace.x, -ndcSpace.y, 0, 1);
     
     // 3D 深度影响点大小：近大远小
-    float baseSize = 2.5;
+    float baseSize = 2.0;
     float zNormalized = clamp((p.position.z + 50.0) / 100.0, 0.0, 1.0);
-    out.pointSize = clamp(baseSize * (0.8 + zNormalized * 0.4), 1.0, 5.0);
+    out.pointSize = clamp(baseSize * (0.8 + zNormalized * 0.4), 1.0, 4.0);
     
-    // 丰富的颜色渐变：顶部青色 -> 中间白粉 -> 底部橙色
-    // 使用云团内部相对位置（基于 Y 轴在云团中的偏移）
-    float cloudCenter = uniforms.viewSize.y / 2.0 - 30.0;
-    float cloudRadius = min(uniforms.viewSize.x, uniforms.viewSize.y) * 0.32;
-    float relativeY = (p.homePosition.y - cloudCenter) / cloudRadius;
-    // 翻转方向：Y 越小（屏幕顶部）-> normalizedY 越大 -> 青色
-    float normalizedY = (-relativeY + 1.0) / 2.0;
-    normalizedY = clamp(normalizedY, 0.0, 1.0);
-    
-    // 配色：橙 -> 青
-    float3 coral = float3(1.0, 0.5, 0.3);        // 底部：珊瑚橙
-    float3 peach = float3(1.0, 0.65, 0.45);      // 过渡：蜜桃
-    float3 lightCyan = float3(0.55, 0.88, 0.92); // 过渡：浅青
-    float3 cyan = float3(0.3, 0.75, 0.9);        // 顶部：青色
-    
-    float3 color;
-    if (normalizedY < 0.35) {
-        color = mix(coral, peach, normalizedY / 0.35);
-    } else if (normalizedY < 0.65) {
-        color = mix(peach, lightCyan, (normalizedY - 0.35) / 0.3);
-    } else {
-        color = mix(lightCyan, cyan, (normalizedY - 0.65) / 0.35);
-    }
+    // 直接使用粒子颜色（从图片采样）
+    float3 color = p.color.rgb;
     
     // 深度影响亮度
     float depthBrightness = 0.9 + zNormalized * 0.1;
@@ -175,8 +155,8 @@ vertex VertexOut particleVertex(const device Particle *particles [[buffer(0)]],
     float speedBrightness = 1.0 + min(speed * 0.01, 0.15);
     color *= speedBrightness;
     
-    // 透明度：用于融合效果
-    float alpha = 0.5;
+    // 使用粒子的 alpha
+    float alpha = p.color.a;
     
     out.color = float4(color, alpha);
     

@@ -25,6 +25,7 @@ struct ParticleView: View {
         rise: $rise,
         decay: $decay
       )
+      .padding(.bottom, 160)
       .gesture(
         DragGesture(minimumDistance: 0)
           .onChanged { value in
@@ -137,7 +138,7 @@ class Renderer: NSObject, MTKViewDelegate {
 
   // Buffers
   var particleBuffer: MTLBuffer!
-  let particleCount = 200_000  // 200k particles for better visual quality
+  var actualParticleCount = 0  // Dynamic count based on image sampling
 
   // Interaction Data
   var currentTouch: CGPoint = .zero
@@ -192,51 +193,118 @@ class Renderer: NSObject, MTKViewDelegate {
   }
 
   func setupParticles(viewSize: CGSize) {
+    guard let image = UIImage(named: "nebula"),
+      let cgImage = image.cgImage
+    else {
+      print("Failed to load nebula image")
+      return
+    }
+
+    // Get pixel data from image
+    let width = cgImage.width
+    let height = cgImage.height
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let bytesPerPixel = 4
+    let bytesPerRow = bytesPerPixel * width
+    let bitsPerComponent = 8
+
+    var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+
+    guard
+      let context = CGContext(
+        data: &pixelData,
+        width: width,
+        height: height,
+        bitsPerComponent: bitsPerComponent,
+        bytesPerRow: bytesPerRow,
+        space: colorSpace,
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+      )
+    else {
+      print("Failed to create CGContext")
+      return
+    }
+
+    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
     var particles = [Particle]()
 
-    // Center of the cloud
-    let centerX = Float(viewSize.width) / 2
-    let centerY = Float(viewSize.height) / 2 - 30
+    // Scale factor to fit view (maintain aspect ratio)
+    let imageAspect = Float(width) / Float(height)
+    let viewAspect = Float(viewSize.width) / Float(viewSize.height)
 
-    // Cloud parameters
-    let baseRadius: Float = min(Float(viewSize.width), Float(viewSize.height)) * 0.32
+    let scale: Float
+    let offsetX: Float
+    let offsetY: Float
 
-    for _ in 0..<particleCount {
-      // 使用简单的球形分布 + 随机扰动创建云团
-      let theta = Float.random(in: 0...(2 * .pi))
-      let phi = Float.random(in: 0...(.pi))
-
-      // 非均匀径向分布（中心密集）
-      let u = Float.random(in: 0...1)
-      let r = baseRadius * pow(u, 0.4)  // 0.4 < 0.5 让分布更均匀些
-
-      // 球形坐标转笛卡尔
-      var x = centerX + r * sin(phi) * cos(theta)
-      var y = centerY + r * cos(phi)
-      var z = r * sin(phi) * sin(theta) * 0.5  // Z 方向压扁
-
-      // 添加随机扰动创建不规则边缘
-      let noiseAmount = baseRadius * 0.12
-      x += Float.random(in: -noiseAmount...noiseAmount)
-      y += Float.random(in: -noiseAmount...noiseAmount)
-      z += Float.random(in: -noiseAmount * 0.5...noiseAmount * 0.5)
-
-      let pos = SIMD3<Float>(x, y, z)
-
-      // 每个粒子独立的噪声偏移用于 idle 动画
-      let noiseOffset = SIMD2<Float>(
-        Float.random(in: 0...100),
-        Float.random(in: 0...100)
-      )
-
-      let p = Particle(
-        position: pos,
-        velocity: .zero,
-        homePosition: pos,
-        noiseOffset: noiseOffset
-      )
-      particles.append(p)
+    if imageAspect > viewAspect {
+      // Image is wider than view - fit to width
+      scale = Float(viewSize.width) / Float(width) * 0.9
+      offsetX = Float(viewSize.width) * 0.05
+      offsetY = (Float(viewSize.height) - Float(height) * scale) / 2
+    } else {
+      // Image is taller than view - fit to height
+      scale = Float(viewSize.height) / Float(height) * 0.9
+      offsetX = (Float(viewSize.width) - Float(width) * scale) / 2
+      offsetY = Float(viewSize.height) * 0.05
     }
+
+    // Sampling stride - sample every N pixels to control density
+    // Adjust based on image size to maintain reasonable particle count
+    let targetParticles = 200_000
+    let totalPixels = width * height
+    let sampleStep = max(1, Int(sqrt(Double(totalPixels) / Double(targetParticles))))
+
+    for y in Swift.stride(from: 0, to: height, by: sampleStep) {
+      for x in Swift.stride(from: 0, to: width, by: sampleStep) {
+        let offset = (y * width + x) * bytesPerPixel
+
+        let r = Float(pixelData[offset]) / 255.0
+        let g = Float(pixelData[offset + 1]) / 255.0
+        let b = Float(pixelData[offset + 2]) / 255.0
+        let a = Float(pixelData[offset + 3]) / 255.0
+
+        // Calculate brightness to filter out dark pixels
+        let brightness = (r + g + b) / 3.0
+
+        // Only create particles for visible, bright enough pixels
+        if a > 0.1 && brightness > 0.05 {
+          // Add jitter for organic look
+          let jitter = SIMD2<Float>(
+            Float.random(in: -0.5...0.5),
+            Float.random(in: -0.5...0.5)
+          )
+
+          let pos = SIMD3<Float>(
+            offsetX + Float(x) * scale + jitter.x,
+            offsetY + Float(y) * scale + jitter.y,
+            Float.random(in: -15...15)  // Z depth jitter for 3D effect
+          )
+
+          // Noise offset for idle animation
+          let noiseOffset = SIMD2<Float>(
+            Float.random(in: 0...100),
+            Float.random(in: 0...100)
+          )
+
+          // Use sampled color with adjusted alpha for blending
+          let color = SIMD4<Float>(r, g, b, min(a, 0.6))
+
+          let p = Particle(
+            position: pos,
+            velocity: .zero,
+            homePosition: pos,
+            noiseOffset: noiseOffset,
+            color: color
+          )
+          particles.append(p)
+        }
+      }
+    }
+
+    // Update particle count for rendering
+    actualParticleCount = particles.count
+    print("Generated \(actualParticleCount) particles from image")
 
     let size = particles.count * MemoryLayout<Particle>.stride
     particleBuffer = device.makeBuffer(bytes: particles, length: size, options: .storageModeShared)
@@ -310,7 +378,7 @@ class Renderer: NSObject, MTKViewDelegate {
       computeEncoder.setBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)
 
       let threadsPerGroup = MTLSizeMake(64, 1, 1)
-      let numGroups = MTLSizeMake((particleCount + 63) / 64, 1, 1)
+      let numGroups = MTLSizeMake((actualParticleCount + 63) / 64, 1, 1)
 
       computeEncoder.dispatchThreadgroups(numGroups, threadsPerThreadgroup: threadsPerGroup)
       computeEncoder.endEncoding()
@@ -340,7 +408,7 @@ class Renderer: NSObject, MTKViewDelegate {
       )
       renderEncoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)
 
-      renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: particleCount)
+      renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: actualParticleCount)
       renderEncoder.endEncoding()
     }
 
