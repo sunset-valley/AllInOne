@@ -5,6 +5,7 @@ struct Feature: Hashable, Identifiable {
   enum Destination: Hashable {
     case buildInTransition
     case highlightSwift
+    case particleDemo
     case fallback(title: String)
 
     /// Source code directory path relative to Features folder
@@ -12,6 +13,7 @@ struct Feature: Hashable, Identifiable {
       switch self {
       case .buildInTransition: return "Transitions"
       case .highlightSwift: return "HighlightSwift"
+      case .particleDemo: return "ParticleDemo"
       case .fallback: return nil
       }
     }

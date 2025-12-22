@@ -1,5 +1,10 @@
 import SwiftUI
 
+/// Wrapper for navigating to source code view
+struct SourceCodeNavigation: Hashable {
+  let destination: Feature.Destination
+}
+
 struct FeaturesView: View {
   @Environment(CategoryManager.self) var categoryManager: CategoryManager
 
@@ -17,7 +22,26 @@ struct FeaturesView: View {
     }
     .navigationTitle("Features")
     .navigationDestination(for: Feature.Destination.self) { destination in
-      FeatureFileListView(destination: destination)
+      Group {
+        switch destination {
+        case .buildInTransition:
+          BuildInTransitionView()
+        case .particleDemo:
+          ParticleView()
+        case .highlightSwift, .fallback:
+          Text("Feature: \(String(describing: destination))")
+        }
+      }
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          NavigationLink(value: SourceCodeNavigation(destination: destination)) {
+            Image(systemName: "doc.text")
+          }
+        }
+      }
+    }
+    .navigationDestination(for: SourceCodeNavigation.self) { navigation in
+      FeatureFileListView(destination: navigation.destination)
     }
     .navigationDestination(for: FeatureSourceFile.self) { file in
       FeatureCodeDetailView(file: file)

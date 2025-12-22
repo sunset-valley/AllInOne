@@ -15,6 +15,11 @@ import Foundation
         features: [
           .init(title: "HighlightSwift", destination: .highlightSwift)
         ]),
+      .init(
+        title: "Metal & Graphics",
+        features: [
+          .init(title: "Particle Demo", destination: .particleDemo)
+        ]),
     ]
   }
 }

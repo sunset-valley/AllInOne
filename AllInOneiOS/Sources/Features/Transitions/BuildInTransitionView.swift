@@ -72,20 +72,6 @@ struct BuildInTransitionView: View {
       }
     }
     .animation(.linear, value: showText)
-    .toolbar {
-      // Trailing (Right) side
-      ToolbarItem(placement: .navigationBarTrailing) {
-        NavigationLink {
-          ZoomableScrollView {
-            Image(.buildInTransitionView)
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-          }
-        } label: {
-          Image(systemName: "keyboard")
-        }
-      }
-    }
     .onChange(
       of: offset, initial: false,
       { oldValue, newValue in
