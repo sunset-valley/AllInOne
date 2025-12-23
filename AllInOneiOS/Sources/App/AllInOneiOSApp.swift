@@ -2,14 +2,14 @@ import SwiftUI
 
 @main
 struct AllInOneiOSApp: App {
-    let categoryManager = CategoryManager()
-    
-    var body: some Scene {
-        WindowGroup {
-            NavigationStack {
-                FeaturesView()
-            }
-            .environment(categoryManager)
-        }
+  let categoryManager = CategoryManager()
+  let algorithmCategoryManager = AlgorithmCategoryManager()
+
+  var body: some Scene {
+    WindowGroup {
+      MainTabView()
+        .environment(categoryManager)
+        .environment(algorithmCategoryManager)
     }
+  }
 }
