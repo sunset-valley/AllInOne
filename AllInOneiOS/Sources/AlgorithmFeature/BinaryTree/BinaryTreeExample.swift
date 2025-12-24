@@ -3,6 +3,7 @@ import SwiftUI
 struct BinaryTreeExample: View {
   let binaryTree = BinaryTree()
   let arrayBinaryTree = ArrayBinaryTree(arr: [1,2,3,4,5,6,7])
+  let avl = AVL()
   
   @State private var bfsResult1: [Int] = []
   @State private var preResult1: [Int] = []
@@ -13,6 +14,10 @@ struct BinaryTreeExample: View {
   @State private var preResult2: [Int] = []
   @State private var inResult2: [Int] = []
   @State private var postResult2: [Int] = []
+  
+  @State private var avlResult: [String] = []
+  @State private var avlDeleteVal: Int = 0
+
 
   var body: some View {
     ScrollView {
@@ -88,6 +93,34 @@ struct BinaryTreeExample: View {
                 .foregroundStyle(postResult1 == postResult2 ? .green : .red)
             }
           }
+        }
+      }
+      
+      GroupBox("AVL") {
+        HStack {
+          Button("Insert") {
+            avl.insert(val: Int.random(in: 0..<100))
+            avlResult.append(avl.description())
+          }
+          
+          
+          Stepper(value: $avlDeleteVal) {
+            Button {
+              avl.remove(val: avlDeleteVal)
+              avlResult.append(avl.description())
+            } label: {
+              Text("Delete Val:\(avlDeleteVal)")
+            }
+          }
+        }
+        
+        ForEach(avlResult.enumerated(), id: \.offset) { index, value in
+          HStack {
+            Text("\(index)")
+            Text(value)
+              .frame(maxWidth: .infinity)
+          }
+          Divider()
         }
       }
     }
